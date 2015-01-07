@@ -6,12 +6,18 @@
 # the number of cpus on your machine.
 
 #a) JHU cluster options
-export train_cmd="queue.pl -l arch=*64"
-export decode_cmd="queue.pl -l arch=*64 --mem 2G"
-export mkgraph_cmd="queue.pl -l arch=*64 --mem 4G"
-export big_memory_cmd="queue.pl -l arch=*64 --mem 8G"
-export cuda_cmd="queue.pl -l gpu=1"
+#export train_cmd="queue.pl -l arch=*64"
+#export decode_cmd="queue.pl -l arch=*64 --mem 2G"
+#export mkgraph_cmd="queue.pl -l arch=*64 --mem 4G"
+#export big_memory_cmd="queue.pl -l arch=*64 --mem 8G"
+#export cuda_cmd="queue.pl -l gpu=1"
 
+# II cluster
+export train_cmd="utils/slurm.pl -n 2 -p partlaball"
+export decode_cmd="utils/slurm.pl -n 2 -p partlaball"
+export mkgraph_cmd="utils/slurm.pl -n 2 -p partlaball"
+export big_memory_cmd="utils/slurm.pl -n 2 -p partlaball"
+export cuda_cmd="utils/slurm.pl -n 2 -p part110"
 
 
 #b) BUT cluster options

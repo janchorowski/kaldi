@@ -4,11 +4,14 @@
 # Set this to somewhere where you want to put your data, or where
 # someone else has already put it.  You'll want to change this 
 # if you're not on the CLSP grid.
-data=/export/a15/vpanayotov/data
+data=/pio/data/data/librispeech
 
 # base url for downloads.
 data_url=www.openslr.org/resources/12
 lm_url=www.openslr.org/resources/11
+
+train_nj=10
+decode_nj=10
 
 . cmd.sh
 . path.sh
@@ -48,7 +51,7 @@ done
 
 # when "--stage 3" option is used below we skip the G2P steps, and use the
 # lexicon we have already downloaded from openslr.org/11/
-local/prepare_dict.sh --stage 3 --nj 30 --cmd "$train_cmd" \
+local/prepare_dict.sh --stage 3 --nj $train_nj --cmd "$train_cmd" \
    data/local/lm data/local/lm data/local/dict_nosp || exit 1
 
 utils/prepare_lang.sh data/local/dict_nosp \
@@ -72,7 +75,7 @@ fi
 
 
 for part in dev_clean test_clean dev_other test_other train_clean_100; do
-  steps/make_mfcc.sh --cmd "$train_cmd" --nj 40 data/$part exp/make_mfcc/$part $mfccdir
+  steps/make_mfcc.sh --cmd "$train_cmd" --nj $train_nj data/$part exp/make_mfcc/$part $mfccdir
   steps/compute_cmvn_stats.sh data/$part exp/make_mfcc/$part $mfccdir
 done
 
@@ -86,7 +89,7 @@ utils/subset_data_dir.sh data/train_clean_100 5000 data/train_5k
 utils/subset_data_dir.sh data/train_clean_100 10000 data/train_10k
 
 # train a monophone system
-steps/train_mono.sh --boost-silence 1.25 --nj 20 --cmd "$train_cmd" \
+steps/train_mono.sh --boost-silence 1.25 --nj $train_nj --cmd "$train_cmd" \
   data/train_2kshort data/lang_nosp exp/mono || exit 1;
 
 # decode using the monophone model
@@ -94,12 +97,12 @@ steps/train_mono.sh --boost-silence 1.25 --nj 20 --cmd "$train_cmd" \
   utils/mkgraph.sh --mono data/lang_nosp_test_tgsmall \
     exp/mono exp/mono/graph_nosp_tgsmall || exit 1
   for test in test_clean test_other dev_clean dev_other; do
-    steps/decode.sh --nj 20 --cmd "$decode_cmd" exp/mono/graph_nosp_tgsmall \
+    steps/decode.sh --nj $decode_nj --cmd "$decode_cmd" exp/mono/graph_nosp_tgsmall \
       data/$test exp/mono/decode_nosp_tgsmall_$test || exit 1
   done
 )&
 
-steps/align_si.sh --boost-silence 1.25 --nj 10 --cmd "$train_cmd" \
+steps/align_si.sh --boost-silence 1.25 --nj $train_nj --cmd "$train_cmd" \
   data/train_5k data/lang_nosp exp/mono exp/mono_ali_5k
 
 # train a first delta + delta-delta triphone system on a subset of 5000 utterances
@@ -111,7 +114,7 @@ steps/train_deltas.sh --boost-silence 1.25 --cmd "$train_cmd" \
   utils/mkgraph.sh data/lang_nosp_test_tgsmall \
     exp/tri1 exp/tri1/graph_nosp_tgsmall || exit 1;
   for test in test_clean test_other dev_clean dev_other; do
-    steps/decode.sh --nj 20 --cmd "$decode_cmd" exp/tri1/graph_nosp_tgsmall \
+    steps/decode.sh --nj $decode_nj --cmd "$decode_cmd" exp/tri1/graph_nosp_tgsmall \
       data/$test exp/tri1/decode_nosp_tgsmall_$test || exit 1;
     steps/lmrescore.sh --cmd "$decode_cmd" data/lang_nosp_test_{tgsmall,tgmed} \
       data/$test exp/tri1/decode_nosp_{tgsmall,tgmed}_$test  || exit 1;
@@ -121,7 +124,7 @@ steps/train_deltas.sh --boost-silence 1.25 --cmd "$train_cmd" \
   done
 )&
 
-steps/align_si.sh --nj 10 --cmd "$train_cmd" \
+steps/align_si.sh --nj $decode_nj --cmd "$train_cmd" \
   data/train_10k data/lang_nosp exp/tri1 exp/tri1_ali_10k || exit 1;
 
 
@@ -135,7 +138,7 @@ steps/train_lda_mllt.sh --cmd "$train_cmd" \
   utils/mkgraph.sh data/lang_nosp_test_tgsmall \
     exp/tri2b exp/tri2b/graph_nosp_tgsmall || exit 1;
   for test in test_clean test_other dev_clean dev_other; do
-    steps/decode.sh --nj 20 --cmd "$decode_cmd" exp/tri2b/graph_nosp_tgsmall \
+    steps/decode.sh --nj $decode_nj --cmd "$decode_cmd" exp/tri2b/graph_nosp_tgsmall \
       data/$test exp/tri2b/decode_nosp_tgsmall_$test || exit 1;
     steps/lmrescore.sh --cmd "$decode_cmd" data/lang_nosp_test_{tgsmall,tgmed} \
       data/$test exp/tri2b/decode_nosp_{tgsmall,tgmed}_$test  || exit 1;
@@ -146,7 +149,7 @@ steps/train_lda_mllt.sh --cmd "$train_cmd" \
 )&
 
 # Align a 10k utts subset using the tri2b model
-steps/align_si.sh  --nj 10 --cmd "$train_cmd" --use-graphs true \
+steps/align_si.sh  --nj $train_nj --cmd "$train_cmd" --use-graphs true \
   data/train_10k data/lang_nosp exp/tri2b exp/tri2b_ali_10k || exit 1;
 
 # Train tri3b, which is LDA+MLLT+SAT on 10k utts
@@ -158,7 +161,7 @@ steps/train_sat.sh --cmd "$train_cmd" 2500 15000 \
   utils/mkgraph.sh data/lang_nosp_test_tgsmall \
     exp/tri3b exp/tri3b/graph_nosp_tgsmall || exit 1;
   for test in test_clean test_other dev_clean dev_other; do
-    steps/decode_fmllr.sh --nj 20 --cmd "$decode_cmd" \
+    steps/decode_fmllr.sh --nj $decode_nj --cmd "$decode_cmd" \
       exp/tri3b/graph_nosp_tgsmall data/$test \
       exp/tri3b/decode_nosp_tgsmall_$test || exit 1;
     steps/lmrescore.sh --cmd "$decode_cmd" data/lang_nosp_test_{tgsmall,tgmed} \
@@ -170,7 +173,7 @@ steps/train_sat.sh --cmd "$train_cmd" 2500 15000 \
 )&
 
 # align the entire train_clean_100 subset using the tri3b model
-steps/align_fmllr.sh --nj 20 --cmd "$train_cmd" \
+steps/align_fmllr.sh --nj $train_nj --cmd "$train_cmd" \
   data/train_clean_100 data/lang_nosp \
   exp/tri3b exp/tri3b_ali_clean_100 || exit 1;
 
@@ -184,7 +187,7 @@ steps/train_sat.sh  --cmd "$train_cmd" 4200 40000 \
   utils/mkgraph.sh data/lang_nosp_test_tgsmall \
     exp/tri4b exp/tri4b/graph_nosp_tgsmall || exit 1;
   for test in test_clean test_other dev_clean dev_other; do
-    steps/decode_fmllr.sh --nj 20 --cmd "$decode_cmd" \
+    steps/decode_fmllr.sh --nj $decode_nj --cmd "$decode_cmd" \
       exp/tri4b/graph_nosp_tgsmall data/$test \
       exp/tri4b/decode_nosp_tgsmall_$test || exit 1;
     steps/lmrescore.sh --cmd "$decode_cmd" data/lang_nosp_test_{tgsmall,tgmed} \
@@ -221,7 +224,7 @@ utils/build_const_arpa_lm.sh \
   utils/mkgraph.sh \
     data/lang_test_tgsmall exp/tri4b exp/tri4b/graph_tgsmall || exit 1;
   for test in test_clean test_other dev_clean dev_other; do
-    steps/decode_fmllr.sh --nj 20 --cmd "$decode_cmd" \
+    steps/decode_fmllr.sh --nj $decode_nj --cmd "$decode_cmd" \
       exp/tri4b/graph_tgsmall data/$test \
       exp/tri4b/decode_tgsmall_$test || exit 1;
     steps/lmrescore.sh --cmd "$decode_cmd" data/lang_test_{tgsmall,tgmed} \
@@ -236,7 +239,7 @@ utils/build_const_arpa_lm.sh \
 )&
 
 # align train_clean_100 using the tri4b model
-steps/align_fmllr.sh --nj 30 --cmd "$train_cmd" \
+steps/align_fmllr.sh --nj $train_nj --cmd "$train_cmd" \
   data/train_clean_100 data/lang exp/tri4b exp/tri4b_ali_clean_100 || exit 1;
 
 # if you want at this point you can train and test NN model(s) on the 100 hour
@@ -248,7 +251,7 @@ local/download_and_untar.sh $data $data_url train-clean-360 || exit 1;
 # now add the "clean-360" subset to the mix ...
 local/data_prep.sh \
   $data/LibriSpeech/train-clean-360 data/train_clean_360 || exit 1
-steps/make_mfcc.sh --cmd "$train_cmd" --nj 40 data/train_clean_360 \
+steps/make_mfcc.sh --cmd "$train_cmd" --nj $train_nj data/train_clean_360 \
   exp/make_mfcc/train_clean_360 $mfccdir || exit 1
 steps/compute_cmvn_stats.sh \
   data/train_clean_360 exp/make_mfcc/train_clean_360 $mfccdir || exit 1
@@ -258,7 +261,7 @@ utils/combine_data.sh \
   data/train_clean_460 data/train_clean_100 data/train_clean_360 || exit 1
 
 # align the new, combined set, using the tri4b model
-steps/align_fmllr.sh --nj 40 --cmd "$train_cmd" \
+steps/align_fmllr.sh --nj $train_nj --cmd "$train_cmd" \
   data/train_clean_460 data/lang exp/tri4b exp/tri4b_ali_clean_460 || exit 1;
 
 # create a larger SAT model, trained on the 460 hours of data.
@@ -270,7 +273,7 @@ steps/train_sat.sh  --cmd "$train_cmd" 5000 100000 \
   utils/mkgraph.sh data/lang_test_tgsmall \
     exp/tri5b exp/tri5b/graph_tgsmall || exit 1;
   for test in test_clean test_other dev_clean dev_other; do
-    steps/decode_fmllr.sh --nj 20 --cmd "$decode_cmd" \
+    steps/decode_fmllr.sh --nj $decode_nj --cmd "$decode_cmd" \
       exp/tri5b/graph_tgsmall data/$test \
       exp/tri5b/decode_tgsmall_$test || exit 1;
     steps/lmrescore.sh --cmd "$decode_cmd" data/lang_test_{tgsmall,tgmed} \
@@ -292,7 +295,7 @@ local/download_and_untar.sh $data $data_url train-other-500 || exit 1;
 # prepare the 500 hour subset.
 local/data_prep.sh \
   $data/LibriSpeech/train-other-500 data/train_other_500 || exit 1
-steps/make_mfcc.sh --cmd "$train_cmd" --nj 40 data/train_other_500 \
+steps/make_mfcc.sh --cmd "$train_cmd" --nj $train_nj data/train_other_500 \
   exp/make_mfcc/train_other_500 $mfccdir || exit 1
 steps/compute_cmvn_stats.sh \
   data/train_other_500 exp/make_mfcc/train_other_500 $mfccdir || exit 1
@@ -301,7 +304,7 @@ steps/compute_cmvn_stats.sh \
 utils/combine_data.sh \
   data/train_960 data/train_clean_460 data/train_other_500 || exit 1
 
-steps/align_fmllr.sh --nj 40 --cmd "$train_cmd" \
+steps/align_fmllr.sh --nj $train_nj --cmd "$train_cmd" \
   data/train_960 data/lang exp/tri5b exp/tri5b_ali_960 || exit 1;
 
 # train a SAT model on the 960 hour mixed data.  Use the train_quick.sh script
@@ -314,7 +317,7 @@ steps/train_quick.sh --cmd "$train_cmd" \
   utils/mkgraph.sh data/lang_test_tgsmall \
     exp/tri6b exp/tri6b/graph_tgsmall || exit 1;
   for test in test_clean test_other dev_clean dev_other; do
-    steps/decode_fmllr.sh --nj 20 --cmd "$decode_cmd" \
+    steps/decode_fmllr.sh --nj $decode_nj --cmd "$decode_cmd" \
       exp/tri6b/graph_tgsmall data/$test exp/tri6b/decode_tgsmall_$test || exit 1;
     steps/lmrescore.sh --cmd "$decode_cmd" data/lang_test_{tgsmall,tgmed} \
       data/$test exp/tri6b/decode_{tgsmall,tgmed}_$test  || exit 1;
