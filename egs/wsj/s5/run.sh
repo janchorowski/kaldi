@@ -15,10 +15,10 @@
 #wsj0=/data/corpora0/LDC93S6B
 #wsj1=/data/corpora0/LDC94S13B
 
-wsj0=/export/corpora5/LDC/LDC93S6B
-wsj1=/export/corpora5/LDC/LDC94S13B
+wsj0=/pio/data/data/wsj/WSJ0
+wsj1=/pio/data/data/wsj/WSJ1
 
-local/wsj_data_prep.sh $wsj0/??-{?,??}.? $wsj1/??-{?,??}.?  || exit 1;
+local/wsj_data_prep.sh $wsj0/*/??-{?,??}.? $wsj1/??-{?,??}.?  || exit 1;
 
 # Sometimes, we have seen WSJ distributions that do not have subdirectories 
 # like '11-13.1', but instead have 'doc', 'si_et_05', etc. directly under the 
