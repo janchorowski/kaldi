@@ -47,7 +47,10 @@ skip_scoring=false
 scoring_opts=
 max_fmllr_jobs=25  # I've seen the fMLLR jobs overload NFS badly if the decoding
                    # was started with a lot of many jobs, so we limit the number of
-                   # parallel jobs to 25 by default.  End configuration section
+                   # parallel jobs to 25 by default.  
+srcdir=""
+# End configuration section
+
 echo "$0 $@"  # Print the command line for logging
 
 [ -f ./path.sh ] && . ./path.sh; # source the path.
@@ -78,7 +81,10 @@ graphdir=$1
 data=$2
 dir=`echo $3 | sed 's:/$::g'` # remove any trailing slash.
 
-srcdir=`dirname $dir`; # Assume model directory one level up from decoding directory.
+if [ -z "$srcdir" ]; then
+    srcdir=`dirname $dir`; # Assume model directory one level up from decoding directory.
+fi
+
 sdata=$data/split$nj;
 
 thread_string=
@@ -119,6 +125,7 @@ if [ -z "$si_dir" ]; then # we need to do the speaker-independent decoding pass.
     steps/decode.sh --scoring-opts "$scoring_opts" \
            --num-threads $num_threads --skip-scoring $skip_scoring \
            --acwt $acwt --nj $nj --cmd "$cmd" --beam $first_beam \
+           --srcdir $srcdir \
            --model $alignment_model --max-active \
            $first_max_active $graphdir $data $si_dir || exit 1;
   fi

@@ -18,6 +18,7 @@ acwt=0.083333 # note: only really affects pruning (scoring is on lattices).
 num_threads=1 # if >1, will use gmm-latgen-faster-parallel
 parallel_opts=  # ignored now.
 scoring_opts=
+srcdir=
 # note: there are no more min-lmwt and max-lmwt options, instead use
 # e.g. --scoring-opts "--min-lmwt 1 --max-lmwt 20"
 skip_scoring=false
@@ -56,7 +57,10 @@ fi
 graphdir=$1
 data=$2
 dir=$3
-srcdir=`dirname $dir`; # The model directory is one level up from decoding directory.
+
+if [ -z "$srcdir" ]; then
+    srcdir=`dirname $dir`; # Assume model directory one level up from decoding directory.
+fi
 sdata=$data/split$nj;
 
 mkdir -p $dir/log

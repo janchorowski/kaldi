@@ -14,11 +14,11 @@
 
 
 # II cluster
-export train_cmd="utils/slurm.pl -n 2 -p partcymes,part137,part110"
-export decode_cmd="utils/slurm.pl -n 2 -p partcymes,part137,part110"
-export mkgraph_cmd="utils/slurm.pl -n 2 -p partcymes,part137,part110"
-export big_memory_cmd="utils/slurm.pl -n 2 -p partcymes,part137,part110"
-export cuda_cmd="utils/slurm.pl -n 2 -p part110"
+export train_cmd="utils/slurm.pl -c 2 -p partcymes"
+export decode_cmd="utils/slurm.pl -c 2 -p partcymes"
+export mkgraph_cmd="utils/slurm.pl -c 2 -p partcymes"
+export big_memory_cmd="utils/slurm.pl -c 2 -p partcymes"
+export cuda_cmd="utils/slurm.pl -c 2 -p part110"
 
 
 
