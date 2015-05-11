@@ -197,3 +197,7 @@ beamformit-3.51: beamformit-3.51.tgz
 beamformit-3.51.tgz:
 	wget -c -T 10 http://www.xavieranguera.com/beamformit/releases/BeamformIt-3.51.tgz
 
+pyfst:
+	wget https://pypi.python.org/packages/source/p/pyfst/pyfst-0.2.3.tar.gz#md5=ace694087b9057416f9be28260d7dcfa
+	tar zxvf pyfst-0.2.3.tar.gz 
+	cd pyfst-0.2.3; python setup.py build_ext --inplace --library-dirs=../openfst/lib --include-dirs=../openfst/include --rpath=`pwd`/../openfst/lib
