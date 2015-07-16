@@ -9,6 +9,8 @@ from IPython.utils.io import stdout
 
 def get_parser():
     parser = kaldi_argparse.KaldiArgumentParser()
+    parser.add_argument('--expect-uttid', type=bool, default=False)
+    parser.add_argument('--split-sil', default=None)
     parser.add_argument('rules_dir')
     parser.add_argument('text_file', default='-', nargs='?')
     parser.add_argument('phoneme_file', default='-', nargs='?')
@@ -40,6 +42,15 @@ if __name__=='__main__':
         line = line.strip()
         if line=="":
             continue
-        phones = saySentence(line, rules)
+        uttid=u""
+        if args.expect_uttid:
+            uttid, line = line.split(None,1)
+            uttid = "%s " % (uttid, )
+        if not args.split_sil:
+            phones = u" ".join(saySentence(line, rules))
+        else:
+            segments = line.split(args.split_sil)
+            segment_phones = [" ".join(saySentence(s.strip(), rules)) for s in segments]
+            phones = (" %s " % (args.split_sil, )).join(segment_phones)
         #logging.debug("phones: %s", phones)
-        args.phoneme_file.write("%s\n" % (u" ".join(phones)),)
+        args.phoneme_file.write("%s%s\n" % (uttid, phones),)

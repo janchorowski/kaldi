@@ -52,7 +52,7 @@ echo sil > $dir/optional_silence.txt
 
 # Create the lexicon, which is just an identity mapping
 echo "sil" > $dir/phones.txt
-cut -d' ' -f2- $srcdir/train.text | tr ' ' '\n' | sort -u >> $dir/phones.txt
+cut -d' ' -f2- $srcdir/train.text | tr ' ' '\n' | grep -v "sil" | sort -u >> $dir/phones.txt
 paste $dir/phones.txt $dir/phones.txt > $dir/lexicon.txt || exit 1;
 grep -v -F -f $dir/silence_phones.txt $dir/phones.txt > $dir/nonsilence_phones.txt 
 

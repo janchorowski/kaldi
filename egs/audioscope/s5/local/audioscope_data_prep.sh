@@ -30,7 +30,7 @@ audioscope=$1
 [ -f $conf/train_books.list ] || error_exit "$PROG: train-set book list not found.";
 
 listed_books=`cat $conf/test_books.list $conf/dev_books.list $conf/train_books.list | sort | uniq |wc -l`
-found_books=`ls $audioscope/voice/audiobooks | wc -w`
+found_books=`ls $audioscope/voice/audiobooks | grep -v paths | wc -w`
 
 [ $listed_books -eq $found_books ] || error_exit "$PROG: given books lists differ from the found books"
 
