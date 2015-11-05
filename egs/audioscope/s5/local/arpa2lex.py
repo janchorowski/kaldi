@@ -3,8 +3,8 @@
 import sys
 import os
 
-if len(sys.argv) != 2:
-  print "Usage: python arpa2lex.py <arpa_file>"
+if len(sys.argv) != 3:
+  print "Usage: python arpa2lex.py <arpa_file> <rules_dir>"
   exit(1)
 
 try:
@@ -17,15 +17,18 @@ for line in arpa_file:
   if line == "\\1-grams:\n":
     break
 
-print "sil"
-
 for line in arpa_file:
-  if line == '\n' or line.startswith("\\end"):
+  if line == '\n' or line == "\\end":
     break
 
   word = line.split()[1]
 
   if word != "<s>" and word != "</s>" and word != "sil":
-    print word
+    sys.stdout.write(word + " ")
+    sys.stdout.flush()
+    os.system("echo " + word + "| local/gen_transcripts.py " + sys.argv[2])
+  elif word == "sil":
+    sys.stdout.write("sil sil\n")
+    sys.stdout.flush()
 
 arpa_file.close()
