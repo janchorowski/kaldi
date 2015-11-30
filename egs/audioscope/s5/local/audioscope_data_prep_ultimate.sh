@@ -45,22 +45,32 @@ audiobooks=$3
 tmpdir=$(mktemp -d);
 trap 'rm -rf "$tmpdir"' EXIT
 
-best_sphinx=/pio/scratch/1/i246062/poligon/best_sphinx/small
+best_sphinx=/pio/scratch/1/i246062/poligon/best_sphinx/small2
 best_files=$best_sphinx/an4_train
 
 #### Generate filelists if there're no existing
 
 if [ ! -f $best_sphinx/an4_train_audiobooks.fileids ]; then
-  python3 $best_sphinx/generate_random_train_data.py $best_sphinx/an4_all_audiobooks.fileids > $tmpdir/an4_train_audiobooks.fileids
+  python3 $best_sphinx/generate_random_train_data.py $best_sphinx/an4_all_audiobooks.fileids > $tmpdir/an4_train_audiobooks_imba.fileids
+
+  cat $tmpdir/an4_train_audiobooks_imba.fileids | sed "s:max1hSimple/\(.*\)-.*/.*:\1:" | sort | uniq > $tmpdir/an4_train_speakers.txt
+
+  cat $tmpdir/an4_train_audiobooks_imba.fileids | \
+    sed -e "s:max1hSimple/\(.*\)/\(.*\):max1hSimple/\1__\2 sox $audiobooks/\1/\2.wav -t wav - |:" | \
+    sort | wav-to-duration scp:- ark,t:- > $tmpdir/an4_train_audiobooks_dur.ark
+
+  python $best_sphinx/balance_train_data.py $tmpdir/an4_train_audiobooks_dur.ark 10.0 \
+    | sort > $best_sphinx/an4_train_audiobooks.fileids
 
   ## In order to maintain a balance between multiple readers you can pass
   ## some recordings to Kaldi multiple times by appending different suffixes
   ## to the uttids. Below it is not done, only one parameter is added in order
   ## to maintain campatibility with the rest of the scripts.
-  cat $tmpdir/an4_train_audiobooks.fileids | grep max1hSimple | sed "s:\(.*\):\1__0:g" > $best_sphinx/an4_train_audiobooks.fileids
+
+  #cat $tmpdir/an4_train_audiobooks.fileids | grep max1hSimple | sed "s:\(.*\):\1__0:g" > $best_sphinx/an4_train_audiobooks.fileids
 fi
 
-cat $best_sphinx/an4_train_audiobooks.fileids | sed "s:max1hSimple/\(.*\)__0:\1.txt:g" > $tmpdir/an4_train_audiobooks.txtfileids
+cat $best_sphinx/an4_train_audiobooks.fileids | sed "s:max1hSimple/\(.*\)__\(.*\):\1.txt:g" > $tmpdir/an4_train_audiobooks.txtfileids
 
 for x in `cat $tmpdir/an4_train_audiobooks.txtfileids | sed "s:^:$audiobooks/:g"`
 do
@@ -131,10 +141,10 @@ join $dir/train_sphinx_kaldi_uttid $tmpdir/train_words.text | cut -d' ' -f 2- | 
 #cat $dir/dev_wav.flist | sed -e 's:\(.*/\(.*\)-.*/\(.*\).WAV$\):\2__\3 sox \1 -t wav - |:i' \
 #    | sort -k1,1 > $dir/dev_wav.scp
 
-cat $best_sphinx/an4_train_audiobooks.fileids | sed 's:__.::g' | sort > $tmpdir/an4_train_sorted.fileids
+cat $best_sphinx/an4_train_audiobooks.fileids | sed 's:__\(.*\)::g' | sort > $tmpdir/an4_train_sorted.fileids
 
 comm -23 $best_sphinx/an4_all_audiobooks.fileids $tmpdir/an4_train_sorted.fileids |\
-    grep max1hSimple | sed "s:\(.*\):\1__0:g" > $best_sphinx/an4_dev.fileids
+    grep max1hSimple | grep -vf $tmpdir/an4_train_speakers.txt | sed "s:\(.*\):\1__0:g" > $best_sphinx/an4_dev.fileids
 
 cat $best_sphinx/an4_dev.fileids | grep 'max1hSimple' |\
     sed -e "s:max1hSimple/\(\(.*\)-.*/\(.*\)\)__\(.*\):\3__\4 \2__\3__\4 sox $audiobooks/\1.wav -t wav - |:" > $tmpdir/dev_wav.scp
