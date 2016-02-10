@@ -4,17 +4,16 @@ import sys
 import logging
 import codecs
 
-import kaldi_argparse
+import argparse
 from IPython.utils.io import stdout
 
 def get_parser():
-    parser = kaldi_argparse.KaldiArgumentParser()
+    parser = argparse.ArgumentParser()
     parser.add_argument('--expect-uttid', type=bool, default=False)
     parser.add_argument('--split-sil', default=None)
     parser.add_argument('rules_dir')
     parser.add_argument('text_file', default='-', nargs='?')
     parser.add_argument('phoneme_file', default='-', nargs='?')
-    parser.add_standard_arguments()
     return parser
 
 
