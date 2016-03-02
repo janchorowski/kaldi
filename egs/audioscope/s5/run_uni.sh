@@ -39,16 +39,17 @@ echo "                Data & Lexicon & Language Preparation                     
 echo ============================================================================
 
 audioscope=/pio/data/data/audioscope
-eksperci=/home/jch/scratch/korpusiki/eksperci
-modele=/pio/scratch/1/i246062/l_models/test_models
+dev_set=/home/jch/scratch/korpusiki/eksperci
+test_set=/pio/scratch/1/i246062/data/test_set
+models=/pio/scratch/1/i246062/l_models/test_models
 audiobooks=/pio/data/data/audioscope/voice/audiobooks/all
 
-local/audioscope_data_prep_uni.sh $audioscope $eksperci $audiobooks || exit 1
+local/audioscope_data_prep_uni.sh $audioscope $audiobooks $dev_set $test_set || exit 1
 
 # Get lm suffixes
 source data/lm_suffixes.sh
 
-local/audioscope_prepare_dict_ultimate.sh $modele
+local/audioscope_prepare_dict_ultimate.sh $models
 
 # Insert optional-silence with probability 0.5, which is the
 # default.

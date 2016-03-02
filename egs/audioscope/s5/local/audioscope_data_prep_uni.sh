@@ -15,7 +15,7 @@ echo -e "$@" >&2; exit 1;
 }
 
 if [ $# -ne 3 ]; then
-   echo "Arguments should be the Audioscope, Eksperci and Audiobooki directories, see ../run.sh for example."
+   echo "Arguments should be the Audioscope, Audiobooki, Eksperci1 and Eksperci2 directories, see ../run.sh for example."
    exit 1;
 fi
 
@@ -28,17 +28,17 @@ conf=`pwd`/conf
 datadir=`pwd`/data
 
 audioscope=$1
-eksperci=$2
-audiobooks=$3
+audiobooks=$2
+dev_set=$3
+test_set=$4
 
 . ./path.sh # Needed for KALDI_ROOT
 
-#tmpdir=$(mktemp -d);
-tmpdir=/pio/scratch/1/i246062/poligon/tmp_debug
-#trap 'rm -rf "$tmpdir"' EXIT
+tmpdir=$(mktemp -d);
+#tmpdir=/pio/scratch/1/i246062/poligon/tmp_debug
+trap 'rm -rf "$tmpdir"' EXIT
 
-train_data_dir=/pio/scratch/1/i246062/poligon/best_sphinx/max1h100
-testset=/pio/scratch/1/i246062/data/test_set
+train_data_dir=./conf/max1h100
 
 #### Balance speakers from files list.
 
@@ -112,17 +112,21 @@ join $dir/train_sphinx_kaldi_uttid $tmpdir/train_words.text | cut -d' ' -f 2- | 
 
 #### Dev (valdiation) set
 
-cat $eksperci/eksperci/wav.scp | sort > $dir/dev_wav.scp
-cat $eksperci/eksperci/text | sort > $dir/dev_phones.text
-cat $eksperci/prompts.txt.tmp | sort > $dir/dev_words.text
-cat $eksperci/eksperci/utt2spk | sort > $dir/dev.utt2spk
+cat $dev_set/eksperci/wav.scp | sort > $dir/dev_wav.scp
+cat $dev_set/eksperci/text | sort > $dir/dev_phones.text
+cat $dev_set/prompts.txt.tmp | sort > $dir/dev_words.text
+cat $dev_set/eksperci/utt2spk | sort > $dir/dev.utt2spk
+#cut -d ' ' -f 1 $dev_set/eksperci/utt2spk > $tmpdir/uttofspk_dev.text
+#paste -d ' ' $tmpdir/uttofspk_dev.text $tmpdir/uttofspk_dev.text | sort > $dir/dev.utt2spk
 
 #### Test set
 
-cat $testset/wav.scp | sort > $dir/test_wav.scp
-cat $testset/text_phones | sort > $dir/test_phones.text
-cat $testset/text_words | sort > $dir/test_words.text
-cat $testset/utt2spk | sort > $dir/test.utt2spk
+cat $test_set/wav.scp | sort > $dir/test_wav.scp
+cat $test_set/text_phones | sort > $dir/test_phones.text
+cat $test_set/text_words | sort > $dir/test_words.text
+cat $test_set/utt2spk | sort > $dir/test.utt2spk
+#cut -d ' ' -f 1 $test_set/utt2spk > $tmpdir/uttofspk_test.text
+#paste -d ' ' $tmpdir/uttofspk_test.text $tmpdir/uttofspk_test.text | sort > $dir/test.utt2spk
 
 cd $dir
 for x in train dev test; do
