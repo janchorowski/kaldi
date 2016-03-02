@@ -14,7 +14,7 @@ function error_exit () {
 echo -e "$@" >&2; exit 1;
 }
 
-if [ $# -ne 3 ]; then
+if [ $# -ne 4 ]; then
    echo "Arguments should be the Audioscope, Audiobooki, Eksperci1 and Eksperci2 directories, see ../run.sh for example."
    exit 1;
 fi
